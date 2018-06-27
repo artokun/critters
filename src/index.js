@@ -6,7 +6,7 @@ import { BrowserRouter } from 'react-router-dom';
 import { composeWithDevTools } from 'redux-devtools-extension';
 import reduxThunk from 'redux-thunk';
 import reducers from 'store/reducers';
-import App from 'components/App';
+import App from './App';
 import 'styles/reset.css';
 import 'styles/typography.css';
 import registerServiceWorker from './registerServiceWorker';

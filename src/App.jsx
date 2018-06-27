@@ -2,15 +2,16 @@ import React, { Component } from 'react';
 // import { PropTypes } from 'prop-types';
 import { connect } from 'react-redux';
 import * as actions from 'store/actions';
-import { Route, Switch, Redirect } from 'react-router-dom';
+import { Route, Switch /*, Redirect*/ } from 'react-router-dom';
 import styled from 'styled-components';
+import Main from 'components/screens/Main';
 
 class App extends Component {
   render() {
     return (
       <MainContainer>
         <Switch>
-          <Route exact path="/" component={() => <div>Home</div>} />
+          <Route exact path="/" component={Main} />
           <Route path="/*" component={() => <div>404 You are lost</div>} />
         </Switch>
       </MainContainer>
@@ -18,22 +19,22 @@ class App extends Component {
   }
 }
 
-const PrivateRoute = ({ component: Component, ...rest }) => (
-  <Route
-    {...rest}
-    render={props =>
-      props.user ? (
-        <Component {...rest} />
-      ) : (
-        <Redirect
-          to={{
-            pathname: '/login',
-          }}
-        />
-      )
-    }
-  />
-);
+// const PrivateRoute = ({ component: Component, ...rest }) => (
+//   <Route
+//     {...rest}
+//     render={props =>
+//       props.user ? (
+//         <Component {...rest} />
+//       ) : (
+//         <Redirect
+//           to={{
+//             pathname: '/login',
+//           }}
+//         />
+//       )
+//     }
+//   />
+// );
 
 const MainContainer = styled.div`
   width: 100%;
