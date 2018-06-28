@@ -2,6 +2,7 @@
 *:before,
 *:after {
   font-family: 'Helvetica Neue', sans-serif;
+  box-sizing: border-box;
 }
 
 body {
