@@ -1,65 +1,47 @@
-import React from 'react';
-import styled from 'styled-components';
+import React, { Component } from 'react';
 import CritterMain from 'lib/CritterMain';
+import Critter from 'lib/Critter';
 
-const critterMain = new CritterMain();
+class Main extends Component {
+  state = {
+    running: false,
+    fps: 24,
+    size: 50,
+  };
 
-const Main = () => {
-  return (
-    <main style={{ width: '80%' }}>
-      <World grid={critterMain.generateWorld()} />
-    </main>
-  );
-};
-
-const World = ({ grid }) => {
-  const renderGrid = () => grid.map(renderRow);
-  const renderRow = (row, rowIndex) => (
-    <Row key={rowIndex}>{row.map(renderCol)}</Row>
-  );
-  const renderCol = (col, colIndex) => <Col key={colIndex}>{col}</Col>;
-  return (
-    <GridWrapper>
-      <Grid>{renderGrid()}</Grid>
-    </GridWrapper>
-  );
-};
-
-const GridWrapper = styled.div`
-  position: relative;
-  height: 0;
-  width: 100%;
-  padding-top: ${(critterMain.height / critterMain.width) * 100}%;
-`;
-const Grid = styled.div`
-  position: absolute;
-  top: 0;
-  right: 0;
-  left: 0;
-  bottom: 0;
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  height: 100%;
-  border: 1px solid #dadada;
-`;
-const Row = styled.div`
-  display: flex;
-  flex: 1;
-  border-bottom: 1px solid #dadada;
-
-  &:last-child {
-    border-bottom: none;
+  componentDidMount() {
+    this.main = new CritterMain(this.canvas, [Critter], 25);
   }
-`;
-const Col = styled.div`
-  flex: 1;
-  border-right: 1px solid #dadada;
-  font-size: 0;
 
-  &:last-child {
-    border-right: none;
+  toggle = () => {
+    this.setState(
+      ({ running }) => ({ running: !running }),
+      () => {
+        this.main.fps = this.state.running ? this.state.fps : 0;
+      }
+    );
+  };
+
+  reset = () => {
+    this.main.reset();
+  };
+
+  handleInputChange = ({ target: { name, value } }) => {
+    this.setState({ [name]: value });
+  };
+
+  render() {
+    return (
+      <main style={{ width: '80%' }}>
+        <canvas ref={ref => (this.canvas = ref)} />
+        <br />
+        <button onClick={this.toggle}>
+          {this.state.running ? 'Stop' : 'Start'}
+        </button>
+        <button onClick={this.reset}>Reset</button>
+      </main>
+    );
   }
-`;
+}
 
 export default Main;
