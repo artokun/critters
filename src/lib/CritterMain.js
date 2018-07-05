@@ -5,12 +5,12 @@ import flow from 'lodash/fp/flow';
 class CritterMain {
   constructor(canvas, critters, critterCount) {
     // world settings
-    this.height = 15;
-    this.width = 20;
-    this.size = 25;
+    this.height = 50;
+    this.width = 60;
+    this.size = 15;
     this.counter = 1;
     this.running = false;
-    this.fps = 0.00001;
+    this.fps = 1;
 
     // objects
     this.canvas = canvas;
@@ -67,16 +67,26 @@ class CritterMain {
   }
 
   update() {
-    console.log(this.gameObjects);
+    this.ctx.fillStyle = 'lightgreen';
+    this.ctx.fillRect(0, 0, this.width * this.size, this.height * this.size);
     this.gameObjects.forEach((row, y) => {
       row.forEach((obj, x) => {
+        this.ctx.lineWidth = 0.25;
+        this.ctx.strokeStyle = 'gray';
+        this.ctx.strokeRect(x * this.size, y * this.size, this.size, this.size);
         if (!obj) return;
         obj.x = x;
         obj.y = y;
         obj.height = this.height;
         obj.width = this.width;
         obj.neighbors = this.getNeighbors(x, y);
-        console.log({ x, y }, obj.neighbors);
+        this.ctx.fillStyle = obj.getColor();
+        this.ctx.font = `${this.size * 0.8}px arial`;
+        this.ctx.fillText(
+          obj.toString(),
+          x * this.size + this.size * 0.28,
+          y * this.size - this.size * 0.2
+        );
       });
     });
   }
@@ -89,27 +99,27 @@ class CritterMain {
     const leftEdge = x === 0;
 
     const ordinalClasses = {
-      // NW: topEdge
-      //   ? leftEdge
-      //     ? go[this.width - 1][this.height - 1]
-      //     : go[x - 1][this.height - 1]
-      //   : go[x - 1][y - 1],
+      NW: topEdge
+        ? leftEdge
+          ? go[this.height - 1][this.width - 1]
+          : go[this.height - 1][x - 1]
+        : go[y - 1][x - 1],
       N: topEdge ? go[this.height - 1][x] : go[y - 1][x],
-      // NE: topEdge
-      //   ? rightEdge
-      //     ? go[0][this.height - 1]
-      //     : go[x + 1][this.height - 1]
-      //   : go[x + 1][y - 1],
+      NE: topEdge
+        ? rightEdge
+          ? go[this.height - 1][0]
+          : go[this.height - 1][x + 1]
+        : go[y - 1][x + 1],
       W: leftEdge ? go[y][this.width - 1] : go[y][x - 1],
       CENTER: go[y][x],
       E: rightEdge ? go[y][0] : go[y][x + 1],
-      // SW: bottomEdge
-      //   ? leftEdge
-      //     ? go[this.width - 1][0]
-      //     : go[x - 1][0]
-      //   : go[x - 1][y + 1],
+      SW: bottomEdge
+        ? leftEdge
+          ? go[0][this.width - 1]
+          : go[0][x - 1]
+        : go[y + 1][x - 1],
       S: bottomEdge ? go[0][x] : go[y + 1][x],
-      // SE: bottomEdge ? (rightEdge ? go[0][0] : go[x + 1][0]) : go[x + 1][y + 1],
+      SE: bottomEdge ? (rightEdge ? go[0][0] : go[0][x + 1]) : go[y + 1][x + 1],
     };
 
     let neighbors = {};
@@ -125,7 +135,12 @@ class CritterMain {
 
   draw() {
     // clear canvas
-    this.ctx.clearRect(0, 0, this.canvas.height, this.canvas.width);
+    this.ctx.clearRect(
+      0,
+      0,
+      this.canvas.height * this.size,
+      this.canvas.width * this.size
+    );
 
     // canvas visuals
     this.update();

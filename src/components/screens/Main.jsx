@@ -32,7 +32,7 @@ class Main extends Component {
 
   render() {
     return (
-      <main style={{ width: '80%' }}>
+      <main>
         <canvas ref={ref => (this.canvas = ref)} />
         <br />
         <button onClick={this.toggle}>
