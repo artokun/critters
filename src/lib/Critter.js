@@ -1,8 +1,7 @@
-import { Object } from 'core-js';
-
 export default class Critter {
   constructor() {
     this.color = '#000000';
+    this.tick = 0;
     this.height = 0;
     this.width = 0;
     this.x = 10;
@@ -72,8 +71,14 @@ export default class Critter {
     return this.neighbors[direction];
   }
 
-  coords() {
+  get coords() {
     return { x: this.x, y: this.y };
+  }
+
+  set coords({ x, y }) {
+    this.tick++;
+    this.x = x;
+    this.y = y;
   }
 
   // These methods are provided to inform you about the result
@@ -98,7 +103,7 @@ export default class Critter {
   mate() {}
 
   // called when your critter is done mating with another critter
-  madeEnd() {}
+  mateEnd() {}
 
   // private methods
 

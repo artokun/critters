@@ -8,9 +8,9 @@ class CritterMain {
     this.height = 50;
     this.width = 60;
     this.size = 15;
-    this.counter = 1;
+    this.tick = 0;
     this.running = false;
-    this.fps = 1;
+    this.fps = 4;
 
     // objects
     this.canvas = canvas;
@@ -54,7 +54,16 @@ class CritterMain {
     // create animals
     critterClasses.forEach(CritterClass => {
       for (let i = 0; i < amount; i++) {
-        animals.push(new CritterClass());
+        switch (CritterClass.prototype.constructor.name) {
+          case 'Bear':
+            animals.push(new CritterClass(!!Math.round(Math.random())));
+            break;
+          case 'Tiger':
+            animals.push(new CritterClass(Math.floor(Math.random() * 10)));
+            break;
+          default:
+            animals.push(new CritterClass());
+        }
       }
     });
 
@@ -82,22 +91,82 @@ class CritterMain {
     c.strokeStyle = 'gray';
 
     this.gameObjects.forEach((row, y) => {
-      row.forEach((obj, x) => {
+      row.forEach((critter, x) => {
         c.strokeRect(x * this.size, y * this.size, this.size, this.size);
-        if (!obj) return;
-        obj.x = x;
-        obj.y = y;
-        obj.height = this.height;
-        obj.width = this.width;
-        obj.neighbors = this.getNeighbors(x, y);
-        c.fillStyle = obj.getColor();
-        c.fillText(
-          obj.toString(),
-          x * this.size + this.size / 2,
-          y * this.size + this.size / 2
+
+        if (!critter || critter.tick !== this.tick) return;
+
+        critter.height = this.height;
+        critter.width = this.width;
+        critter.neighbors = this.getNeighbors(x, y);
+        critter.coords = { x, y };
+
+        this.moveCritter(critter, x, y);
+
+        this.ctx.fillStyle = critter.getColor();
+        this.ctx.fillText(
+          critter.toString(),
+          critter.x * this.size + this.size / 2,
+          critter.y * this.size + this.size / 2
         );
       });
     });
+    this.tick++;
+  }
+
+  moveCritter(critter, x, y) {
+    const go = this.gameObjects;
+    const topEdge = y === 0;
+    const rightEdge = x === this.width - 1;
+    const bottomEdge = y === this.height - 1;
+    const leftEdge = x === 0;
+
+    this.gameObjects[y][x] = null;
+
+    switch (critter.getMove()) {
+      case critter.Direction.NW:
+        topEdge
+          ? leftEdge
+            ? (go[this.height - 1][this.width - 1] = critter)
+            : (go[this.height - 1][x - 1] = critter)
+          : (go[y - 1][x - 1] = critter);
+        break;
+      case critter.Direction.N:
+        topEdge ? (go[this.height - 1][x] = critter) : (go[y - 1][x] = critter);
+        break;
+      case critter.Direction.NE:
+        topEdge
+          ? rightEdge
+            ? (go[this.height - 1][0] = critter)
+            : (go[this.height - 1][x + 1] = critter)
+          : (go[y - 1][x + 1] = critter);
+        break;
+      case critter.Direction.W:
+        leftEdge ? (go[y][this.width - 1] = critter) : (go[y][x - 1] = critter);
+        break;
+      case critter.Direction.E:
+        rightEdge ? (go[y][0] = critter) : (go[y][x + 1] = critter);
+        break;
+      case critter.Direction.SW:
+        bottomEdge
+          ? leftEdge
+            ? (go[0][this.width - 1] = critter)
+            : (go[0][x - 1] = critter)
+          : (go[y + 1][x - 1] = critter);
+        break;
+      case critter.Direction.S:
+        bottomEdge ? (go[0][x] = critter) : (go[y + 1][x] = critter);
+        break;
+      case critter.Direction.SE:
+        bottomEdge
+          ? rightEdge
+            ? (go[0][0] = critter)
+            : (go[0][x + 1] = critter)
+          : (go[y + 1][x + 1] = critter);
+        break;
+      default:
+        go[y][x] = critter;
+    }
   }
 
   getNeighbors(x, y) {

@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import CritterMain from 'lib/CritterMain';
-import Critter from 'lib/Critter';
+import Lion from 'lib/Lion';
+import Bear from 'lib/Bear';
 
 class Main extends Component {
   state = {
@@ -10,7 +11,7 @@ class Main extends Component {
   };
 
   componentDidMount() {
-    this.main = new CritterMain(this.canvas, [Critter], 25);
+    this.main = new CritterMain(this.canvas, [Bear, Lion], 25);
   }
 
   toggle = () => {
