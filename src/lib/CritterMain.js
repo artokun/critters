@@ -67,25 +67,34 @@ class CritterMain {
   }
 
   update() {
-    this.ctx.fillStyle = 'lightgreen';
-    this.ctx.fillRect(0, 0, this.width * this.size, this.height * this.size);
+    const c = this.ctx;
+    // font styles
+    c.font = `${this.size * 0.8}px arial`;
+    c.textAlign = 'center';
+    c.textBaseline = 'middle';
+
+    // background styles
+    c.fillStyle = 'lightgreen';
+    c.fillRect(0, 0, this.width * this.size, this.height * this.size);
+
+    // grid styles
+    c.lineWidth = 0.25;
+    c.strokeStyle = 'gray';
+
     this.gameObjects.forEach((row, y) => {
       row.forEach((obj, x) => {
-        this.ctx.lineWidth = 0.25;
-        this.ctx.strokeStyle = 'gray';
-        this.ctx.strokeRect(x * this.size, y * this.size, this.size, this.size);
+        c.strokeRect(x * this.size, y * this.size, this.size, this.size);
         if (!obj) return;
         obj.x = x;
         obj.y = y;
         obj.height = this.height;
         obj.width = this.width;
         obj.neighbors = this.getNeighbors(x, y);
-        this.ctx.fillStyle = obj.getColor();
-        this.ctx.font = `${this.size * 0.8}px arial`;
-        this.ctx.fillText(
+        c.fillStyle = obj.getColor();
+        c.fillText(
           obj.toString(),
-          x * this.size + this.size * 0.28,
-          y * this.size - this.size * 0.2
+          x * this.size + this.size / 2,
+          y * this.size + this.size / 2
         );
       });
     });
