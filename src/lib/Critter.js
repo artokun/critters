@@ -11,6 +11,7 @@ export default class Critter {
     this.procreated = false;
     this.alive = true;
     this.awake = true;
+    this.foodEaten = 0;
     this.neighbors = {
       NW: ' ',
       N: ' ',

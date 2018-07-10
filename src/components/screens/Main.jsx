@@ -7,7 +7,12 @@ import Bear from 'lib/Bear';
 class Main extends Component {
   componentDidMount() {
     this.main = new CritterMain(this.canvas, [Bear, Lion], 25);
+    this.main.watch(this.monitor);
   }
+
+  monitor = game => {
+    console.log(game.turn);
+  };
 
   render() {
     return (

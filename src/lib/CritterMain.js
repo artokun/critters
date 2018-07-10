@@ -159,19 +159,32 @@ class CritterMain {
     const opponent = this.gameObjects[n.y][n.x];
     const critterSpecies = critter.constructor.name;
     const opponentSpecies = opponent ? opponent.constructor.name : null;
+    let didEat = false;
 
-    // no critter, or food
-    if (!opponent) {
+    // no critter or food
+    if (!opponent || critterSpecies === 'Food') {
       return;
-    } else if ([critterSpecies, opponentSpecies].indexOf('Food') >= 0) {
+    }
+
+    // critter found food
+    if (critterSpecies !== 'Food' && opponentSpecies === 'Food') {
+      didEat = critter.eat();
+      if (didEat) {
+        this.availableFood -= 1;
+        critter.foodEaten += 1;
+      }
+      // console.log(critterSpecies, didEat ? 'ate' : 'did not eat');
       return;
-    } else {
     }
 
     // critters are of different species; fight to the death!
     if (opponentSpecies !== critterSpecies) {
       const opponentAttack = critter.fight(opponent);
       const critterAttack = opponent.fight(critter);
+
+      // console.log(critterSpecies, 'smelled', opponentSpecies, 'butt.');
+    } else {
+      // console.log('two', critterSpecies, 'had a quicky.');
     }
   }
 
@@ -286,6 +299,10 @@ class CritterMain {
     if (this.fps > 0) {
       window.requestAnimationFrame(this.draw);
     }
+  }
+
+  watch(cb) {
+    window.setTimeout(cb(this), 1000 / this.fps);
   }
 }
 
