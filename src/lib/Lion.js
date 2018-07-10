@@ -31,19 +31,21 @@ export default class Lion extends Critter {
   }
 
   getMove() {
+    const { N, E, S, W } = this.Direction;
+
     this.steps++;
     switch (true) {
-      case this.steps <= 5:
-        return this.Direction.S;
-      case this.steps <= 10:
-        return this.Direction.W;
-      case this.steps <= 15:
-        return this.Direction.N;
-      case this.steps <= 20:
-        return this.Direction.E;
+      case this.steps < 6:
+        return S;
+      case this.steps < 12:
+        return W;
+      case this.steps < 18:
+        return N;
+      case this.steps < 24:
+        return E;
       default:
         this.steps = 0;
-        return this.Direction.S;
+        return S;
     }
   }
 

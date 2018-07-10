@@ -1,11 +1,14 @@
+import CM from './CritterMain';
+
 export default class Critter {
   constructor() {
     this.color = '#000000';
-    this.tick = 0;
+    this.turn = 0;
     this.height = 0;
     this.width = 0;
     this.x = 10;
     this.y = 10;
+    this.procreated = false;
     this.alive = true;
     this.awake = true;
     this.neighbors = {
@@ -21,23 +24,8 @@ export default class Critter {
     };
 
     // constants
-    this.Attack = {
-      FORFEIT: 'FORFEIT',
-      ROAR: 'ROAR',
-      POUNCE: 'POUNCE',
-      SCRATCH: 'SCRATCH',
-    };
-    this.Direction = {
-      NW: 'NW',
-      N: 'N',
-      NE: 'NE',
-      E: 'E',
-      CENTER: 'CENTER',
-      W: 'W',
-      SW: 'SW',
-      S: 'S',
-      SE: 'SE',
-    };
+    this.Attack = CM.Attack;
+    this.Direction = CM.Direction;
   }
 
   eat() {
@@ -45,14 +33,17 @@ export default class Critter {
   }
 
   fight(opponent) {
+    // FORFEIT, ROAR, POUNCE, SCRATCH
     return this.Attack.FORFEIT;
   }
 
   getColor() {
+    // #??????
     return (this.color = '#000000');
   }
 
   getMove() {
+    // NW N NE W CENTER E SW S SE
     return this.Direction.CENTER;
   }
 
@@ -76,7 +67,7 @@ export default class Critter {
   }
 
   set coords({ x, y }) {
-    this.tick++;
+    this.turn++;
     this.x = x;
     this.y = y;
   }

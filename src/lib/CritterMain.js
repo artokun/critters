@@ -8,9 +8,10 @@ class CritterMain {
     this.height = 50;
     this.width = 60;
     this.size = 15;
-    this.tick = 0;
+    this.turn = 0;
     this.running = false;
     this.fps = 4;
+    this.availableFood = 50;
 
     // objects
     this.canvas = canvas;
@@ -27,6 +28,25 @@ class CritterMain {
     // initialize
     this.init();
   }
+
+  static Attack = {
+    FORFEIT: 'FORFEIT',
+    ROAR: 'ROAR',
+    POUNCE: 'POUNCE',
+    SCRATCH: 'SCRATCH',
+  };
+
+  static Direction = {
+    NW: 'NW',
+    N: 'N',
+    NE: 'NE',
+    E: 'E',
+    CENTER: 'CENTER',
+    W: 'W',
+    SW: 'SW',
+    S: 'S',
+    SE: 'SE',
+  };
 
   init() {
     this.setCanvasSize();
@@ -50,6 +70,7 @@ class CritterMain {
     // create field
     let field = new Array(this.height * this.width).fill(null);
     let animals = [];
+    let food = [];
 
     // create animals
     critterClasses.forEach(CritterClass => {
@@ -67,8 +88,13 @@ class CritterMain {
       }
     });
 
+    // grow food
+    for (let i = this.availableFood; i > 0; i--) {
+      food.push(new Food());
+    }
+
     // add animals to the field and shuffle
-    field.splice(0, animals.length, ...animals);
+    field.splice(0, animals.length + food.length, ...animals, ...food);
     this.gameObjects = flow(
       shuffle,
       chunk(this.width)
@@ -87,22 +113,37 @@ class CritterMain {
     c.fillRect(0, 0, this.width * this.size, this.height * this.size);
 
     // grid styles
-    c.lineWidth = 0.25;
-    c.strokeStyle = 'gray';
+    c.lineWidth = 1;
+    c.strokeStyle = 'rgba(0,0,0,0.1)';
 
     this.gameObjects.forEach((row, y) => {
       row.forEach((critter, x) => {
+        // draw black squares
         c.strokeRect(x * this.size, y * this.size, this.size, this.size);
 
-        if (!critter || critter.tick !== this.tick) return;
+        // check to see if critter has already moved this turn
+        if (!critter || critter.turn !== this.turn) return;
 
-        critter.height = this.height;
-        critter.width = this.width;
-        critter.neighbors = this.getNeighbors(x, y);
-        critter.coords = { x, y };
+        // set initial values
+        if (this.turn === 0) {
+          critter.height = this.height;
+          critter.width = this.width;
+          critter.coords = { x, y };
+        }
 
-        this.moveCritter(critter, x, y);
+        // ask critters where they want to move
+        const n = this.getNextMove(critter);
 
+        // ask critters if they want to fight/mate/eat
+        this.fightOrMateOrEat(critter, n);
+
+        // paint the animals in their new coordinates if
+
+        // move critter
+        critter.coords = { x: n.x, y: n.y };
+        this.gameObjects[n.y][n.x] = critter;
+
+        // still alive
         this.ctx.fillStyle = critter.getColor();
         this.ctx.fillText(
           critter.toString(),
@@ -111,61 +152,75 @@ class CritterMain {
         );
       });
     });
-    this.tick++;
+    this.turn++;
   }
 
-  moveCritter(critter, x, y) {
-    const go = this.gameObjects;
+  fightOrMateOrEat(critter, n) {
+    const opponent = this.gameObjects[n.y][n.x];
+    const critterSpecies = critter.constructor.name;
+    const opponentSpecies = opponent ? opponent.constructor.name : null;
+
+    // no critter, or food
+    if (!opponent) {
+      return;
+    } else if ([critterSpecies, opponentSpecies].indexOf('Food') >= 0) {
+      return;
+    } else {
+    }
+
+    // critters are of different species; fight to the death!
+    if (opponentSpecies !== critterSpecies) {
+      const opponentAttack = critter.fight(opponent);
+      const critterAttack = opponent.fight(critter);
+    }
+  }
+
+  eat(critter) {
+    return null;
+  }
+
+  getNextMove(critter) {
+    const { x, y } = critter.coords;
     const topEdge = y === 0;
     const rightEdge = x === this.width - 1;
     const bottomEdge = y === this.height - 1;
     const leftEdge = x === 0;
 
-    this.gameObjects[y][x] = null;
-
     switch (critter.getMove()) {
       case critter.Direction.NW:
-        topEdge
+        return topEdge
           ? leftEdge
-            ? (go[this.height - 1][this.width - 1] = critter)
-            : (go[this.height - 1][x - 1] = critter)
-          : (go[y - 1][x - 1] = critter);
-        break;
+            ? { y: this.width - 1, x: this.height - 1 }
+            : { y: this.height - 1, x: x - 1 }
+          : { y: y - 1, x: x - 1 };
       case critter.Direction.N:
-        topEdge ? (go[this.height - 1][x] = critter) : (go[y - 1][x] = critter);
-        break;
+        return topEdge ? { y: this.height - 1, x } : { y: y - 1, x };
       case critter.Direction.NE:
-        topEdge
+        return topEdge
           ? rightEdge
-            ? (go[this.height - 1][0] = critter)
-            : (go[this.height - 1][x + 1] = critter)
-          : (go[y - 1][x + 1] = critter);
-        break;
+            ? { y: this.height - 1, x: 0 }
+            : { y: this.height - 1, x: x + 1 }
+          : { y: y - 1, x: x + 1 };
       case critter.Direction.W:
-        leftEdge ? (go[y][this.width - 1] = critter) : (go[y][x - 1] = critter);
-        break;
+        return leftEdge ? { y, x: this.width - 1 } : { y, x: x - 1 };
       case critter.Direction.E:
-        rightEdge ? (go[y][0] = critter) : (go[y][x + 1] = critter);
-        break;
+        return rightEdge ? { y, x: 0 } : { y, x: x + 1 };
       case critter.Direction.SW:
-        bottomEdge
+        return bottomEdge
           ? leftEdge
-            ? (go[0][this.width - 1] = critter)
-            : (go[0][x - 1] = critter)
-          : (go[y + 1][x - 1] = critter);
-        break;
+            ? { y: 0, x: this.width - 1 }
+            : { y: 0, x: x - 1 }
+          : { y: y + 1, x: x - 1 };
       case critter.Direction.S:
-        bottomEdge ? (go[0][x] = critter) : (go[y + 1][x] = critter);
-        break;
+        return bottomEdge ? { y: 0, x } : { y: y + 1, x };
       case critter.Direction.SE:
-        bottomEdge
+        return bottomEdge
           ? rightEdge
-            ? (go[0][0] = critter)
-            : (go[0][x + 1] = critter)
-          : (go[y + 1][x + 1] = critter);
-        break;
+            ? { y: 0, x: 0 }
+            : { y: 0, x: x + 1 }
+          : { y: y + 1, x: x + 1 };
       default:
-        go[y][x] = critter;
+        return { y, x };
     }
   }
 
@@ -231,6 +286,38 @@ class CritterMain {
     if (this.fps > 0) {
       window.requestAnimationFrame(this.draw);
     }
+  }
+}
+
+class Food {
+  constructor() {
+    this.Direction = CritterMain.Direction;
+    this.x = 0;
+    this.y = 0;
+    this.turn = 0;
+    this.height = 0;
+    this.width = 0;
+  }
+  get coords() {
+    return { x: this.x, y: this.y };
+  }
+
+  set coords({ x, y }) {
+    this.turn++;
+    this.x = x;
+    this.y = y;
+  }
+
+  getColor() {
+    return '#000000';
+  }
+
+  getMove() {
+    return this.Direction.CENTER;
+  }
+
+  toString() {
+    return ',';
   }
 }
 
