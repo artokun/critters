@@ -1,7 +1,8 @@
 import React, { Component } from 'react';
+import styled from 'styled-components';
 import CritterMain from 'lib/CritterMain';
 import Lion from 'lib/Lion';
-// import Tiger from 'lib/Tiger';
+import Tiger from 'lib/Tiger';
 import Bear from 'lib/Bear';
 
 class Main extends Component {
@@ -10,7 +11,7 @@ class Main extends Component {
   };
 
   componentDidMount() {
-    this.game = new CritterMain(this.canvas, [Bear, Lion], 25);
+    this.game = new CritterMain(this.canvas, [Bear, Lion, Tiger], 25);
     this.monitor(this.game.fps);
   }
 
@@ -25,6 +26,12 @@ class Main extends Component {
         ...critter,
         alive: critter.alive ? critter.alive + 1 : 1,
         foodEaten: (critter.foodEaten ? critter.foodEaten : 0) + curr.foodEaten,
+        killCount: (critter.killCount ? critter.killCount : 0) + curr.killCount,
+        score:
+          (critter.score ? critter.score : 0) +
+          curr.foodEaten +
+          curr.killCount +
+          1,
       };
       prev[curr.constructor.name] = newCritter;
       return prev;
@@ -32,7 +39,7 @@ class Main extends Component {
 
     this.setState({
       scores,
-      availableFood: this.game.availableFood,
+      availableFood: this.game.food.length,
     });
 
     // loop
@@ -41,10 +48,11 @@ class Main extends Component {
 
   render() {
     return (
-      <main>
+      <MainWrapper>
         <canvas ref={ref => (this.canvas = ref)} />
         <ScoreBoard scores={this.state.scores} />
-      </main>
+        <p>Food: {this.state.availableFood}</p>
+      </MainWrapper>
     );
   }
 }
@@ -54,5 +62,9 @@ class ScoreBoard extends Component {
     return <pre>{JSON.stringify(this.props.scores, null, 2)}</pre>;
   }
 }
+
+const MainWrapper = styled.main`
+  display: flex;
+`;
 
 export default Main;

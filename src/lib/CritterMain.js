@@ -11,7 +11,7 @@ class CritterMain {
     this.turn = 0;
     this.running = false;
     this.fps = 4;
-    this.availableFood = 50;
+    this.availableFood = 25;
 
     // objects
     this.canvas = canvas;
@@ -20,8 +20,6 @@ class CritterMain {
     this.food = [];
     this.critterClasses = critterClasses;
     this.critterCount = critterCount;
-
-    // this.gameObjects = [];
 
     // bindings
     this.draw = this.draw.bind(this);
@@ -158,6 +156,8 @@ class CritterMain {
       }
     }
 
+    this.growXFoodEvery(3, 20);
+
     // paint food
     this.food.forEach(food => {
       // still alive? paint.
@@ -181,6 +181,22 @@ class CritterMain {
     });
 
     this.turn++;
+  }
+
+  growXFoodEvery(num, turns) {
+    let numLeft = num;
+    if (this.turn % turns === 0) {
+      for (let i = numLeft; i > 0; i--) {
+        const x = Math.floor(Math.random() * this.width);
+        const y = Math.floor(Math.random() * this.height);
+
+        if (this.food.find(f => f.x === x && f.y === y)) {
+          return this.growXFoodEvery(numLeft, turns);
+        }
+        this.food.push(new Food(x, y));
+        numLeft--;
+      }
+    }
   }
 
   fightOrMateOrEat(critter, n) {
@@ -377,10 +393,10 @@ class CritterMain {
 }
 
 class Food {
-  constructor() {
+  constructor(x = 0, y = 0) {
     this.Direction = CritterMain.Direction;
-    this.x = 0;
-    this.y = 0;
+    this.x = x;
+    this.y = y;
     this.turn = 0;
     this.height = 0;
     this.width = 0;
