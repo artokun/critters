@@ -9,9 +9,10 @@ class CritterMain {
     this.width = 60;
     this.size = 15;
     this.turn = 0;
-    this.running = false;
     this.fps = 4;
     this.availableFood = 25;
+    this.regenerateFood = true;
+    this.foodPerTurn = [3, 25];
 
     // objects
     this.canvas = canvas;
@@ -156,7 +157,10 @@ class CritterMain {
       }
     }
 
-    this.growXFoodEvery(3, 20);
+    // regenerate food over time
+    if (this.regenerateFood) {
+      this.growXFoodEvery(...this.foodPerTurn);
+    }
 
     // paint food
     this.food.forEach(food => {
