@@ -19,7 +19,7 @@ class CritterMain {
     this.critters = critters;
     this.critterCount = critterCount;
 
-    this.gameObjects = [];
+    // this.gameObjects = [];
 
     // bindings
     this.draw = this.draw.bind(this);
@@ -116,11 +116,18 @@ class CritterMain {
     c.lineWidth = 1;
     c.strokeStyle = 'rgba(0,0,0,0.1)';
 
+    for (let X = this.width; X >= 0; X--) {
+      for (let Y = this.height; Y >= 0; Y--) {
+        // find critter
+        const critter = this.critters.find(({ x, y }) => x === X && y === Y);
+
+        // draw black squares
+        c.strokeRect(X * this.size, Y * this.size, this.size, this.size);
+      }
+    }
+
     this.gameObjects.forEach((row, y) => {
       row.forEach((critter, x) => {
-        // draw black squares
-        c.strokeRect(x * this.size, y * this.size, this.size, this.size);
-
         // check to see if critter has already moved this turn
         if (!critter || critter.turn !== this.turn) return;
 
@@ -141,7 +148,8 @@ class CritterMain {
 
         // move critter
         critter.coords = { x: n.x, y: n.y };
-        this.gameObjects[n.y][n.x] = critter;
+        // this.gameObjects[y][x] = null;
+        // this.gameObjects[n.y][n.x] = critter;
 
         // still alive
         this.ctx.fillStyle = critter.getColor();
@@ -299,10 +307,6 @@ class CritterMain {
     if (this.fps > 0) {
       window.requestAnimationFrame(this.draw);
     }
-  }
-
-  watch(cb) {
-    window.setTimeout(cb(this), 1000 / this.fps);
   }
 }
 

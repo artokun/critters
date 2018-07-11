@@ -10,6 +10,7 @@ import App from './App';
 import 'styles/reset.css';
 import 'styles/typography.css';
 import registerServiceWorker from './registerServiceWorker';
+import 'utils/polyfills';
 
 let store = null;
 
