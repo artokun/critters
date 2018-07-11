@@ -12,6 +12,7 @@ export default class Critter {
     this.alive = true;
     this.awake = true;
     this.foodEaten = 0;
+    this.killCount = 0;
     this.neighbors = {
       NW: ' ',
       N: ' ',
@@ -77,10 +78,10 @@ export default class Critter {
   // of fights, sleeping, etc.
 
   // called when you win a fight against another animal
-  win() {}
+  win(opponent) {}
 
   // called when you lose a fight against another animal, and die
-  lose() {}
+  lose(opponent) {}
 
   // called when your animal is put to sleep for eating too much food
   sleep() {}

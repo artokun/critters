@@ -141,21 +141,35 @@ class CritterMain {
         c.strokeRect(X * this.size, Y * this.size, this.size, this.size);
 
         // find critter
-        const critter = this.animals.find(c => c.x === X && c.y === Y);
+        const critters = this.animals.filter(c => c.x === X && c.y === Y);
 
-        if (critter) {
-          // ask critters where they want to move
-          const n = this.getNextMove(critter);
+        critters.forEach(critter => {
+          if (critter && critter.turn === this.turn) {
+            // ask critters where they want to move
+            const n = this.getNextMove(critter);
 
-          // ask critters if they want to fight/mate/eat
-          this.fightOrMateOrEat(critter, n);
+            // ask critters if they want to fight/mate/eat
+            this.fightOrMateOrEat(critter, n);
 
-          // move critter
-          critter.coords = { x: n.x, y: n.y };
-        }
+            // schedule next move
+            critter.coords = { x: n.x, y: n.y };
+          }
+        });
       }
     }
 
+    // paint food
+    this.food.forEach(food => {
+      // still alive? paint.
+      this.ctx.fillStyle = food.getColor();
+      this.ctx.fillText(
+        food.toString(),
+        food.x * this.size + this.size / 2,
+        food.y * this.size + this.size / 2
+      );
+    });
+
+    // paint animals
     this.animals.forEach(critter => {
       // still alive? paint.
       this.ctx.fillStyle = critter.getColor();
@@ -165,43 +179,91 @@ class CritterMain {
         critter.y * this.size + this.size / 2
       );
     });
+
+    this.turn++;
   }
 
   fightOrMateOrEat(critter, n) {
-    const opponent = this.animals.find(c => c.x === n.y && c.y === n.x);
+    const opponent = this.animals.find(c => c.x === n.x && c.y === n.y);
+    const food = this.food.find(f => f.x === n.x && f.y === n.y);
     const critterSpecies = critter.constructor.name;
     const opponentSpecies = opponent ? opponent.constructor.name : null;
-    let didEat = false;
 
-    // no critter or food
-    if (!opponent || critterSpecies === 'Food') {
+    // critter found food
+    if (food) {
+      const willEat = critter.eat();
+
+      if (willEat) {
+        critter.foodEaten = critter.foodEaten + 1;
+        this.food.splice(this.food.indexOf(food), 1);
+      }
       return;
     }
 
-    // critter found food
-    if (critterSpecies !== 'Food' && opponentSpecies === 'Food') {
-      didEat = critter.eat();
-      if (didEat) {
-        this.availableFood -= 1;
-        critter.foodEaten += 1;
-      }
-      // console.log(critterSpecies, didEat ? 'ate' : 'did not eat');
+    // no critter
+    if (!opponent) {
       return;
     }
 
     // critters are of different species; fight to the death!
     if (opponentSpecies !== critterSpecies) {
-      const opponentAttack = critter.fight(opponent);
-      const critterAttack = opponent.fight(critter);
-
-      // console.log(critterSpecies, 'smelled', opponentSpecies, 'butt.');
+      const isWinner = this.resolveFight(
+        critter.fight(opponent),
+        opponent.fight(critter)
+      );
+      if (isWinner) {
+        critter.win(opponent.toString());
+        opponent.lose(critter.toString());
+        critter.killCount = critter.killCount + 1;
+        this.animals.splice(this.animals.indexOf(opponent), 1);
+        console.log(critterSpecies, 'killed', opponentSpecies);
+      } else {
+        critter.lose(opponent.toString());
+        opponent.win(critter.toString());
+        opponent.killCount = opponent.killCount + 1;
+        this.animals.splice(this.animals.indexOf(critter), 1);
+        console.log(opponentSpecies, 'killed', critterSpecies);
+      }
     } else {
-      // console.log('two', critterSpecies, 'had a quicky.');
+      console.log('two', critterSpecies + 's', 'had a quicky.');
     }
   }
 
   eat(critter) {
     return null;
+  }
+
+  resolveFight(C, O) {
+    const { ROAR, POUNCE, SCRATCH } = CritterMain.Attack;
+
+    if (C === ROAR) {
+      switch (O) {
+        case POUNCE:
+          return false;
+        case SCRATCH:
+          return true;
+        default:
+          return !!Math.round(Math.random());
+      }
+    } else if (C === POUNCE) {
+      switch (O) {
+        case ROAR:
+          return true;
+        case SCRATCH:
+          return false;
+        default:
+          return !!Math.round(Math.random());
+      }
+    } else if (C === SCRATCH) {
+      switch (O) {
+        case ROAR:
+          return false;
+        case POUNCE:
+          return true;
+        default:
+          return !!Math.round(Math.random());
+      }
+    }
   }
 
   getNextMove(critter) {

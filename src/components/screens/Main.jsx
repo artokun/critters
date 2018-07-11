@@ -20,17 +20,13 @@ class Main extends Component {
 
   updateScores = () => {
     const scores = this.game.animals.reduce((prev, curr) => {
-      if (curr) {
-        let critter = prev[curr.constructor.name];
-        if (critter) {
-          critter = {
-            ...critter,
-            alive: critter.alive ? critter.alive + 1 : 1,
-          };
-          prev[curr.constructor.name] = critter;
-          return prev;
-        }
-      }
+      let critter = prev[curr.constructor.name] || {};
+      let newCritter = {
+        ...critter,
+        alive: critter.alive ? critter.alive + 1 : 1,
+        foodEaten: (critter.foodEaten ? critter.foodEaten : 0) + curr.foodEaten,
+      };
+      prev[curr.constructor.name] = newCritter;
       return prev;
     }, {});
 
