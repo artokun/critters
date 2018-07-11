@@ -19,7 +19,7 @@ class Main extends Component {
   };
 
   updateScores = () => {
-    const scores = this.game.gameObjects.flat().reduce((prev, curr) => {
+    const scores = this.game.animals.reduce((prev, curr) => {
       if (curr) {
         let critter = prev[curr.constructor.name];
         if (critter) {

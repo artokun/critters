@@ -3,7 +3,7 @@ import chunk from 'lodash/fp/chunk';
 import flow from 'lodash/fp/flow';
 
 class CritterMain {
-  constructor(canvas, critters, critterCount) {
+  constructor(canvas, critterClasses, critterCount) {
     // world settings
     this.height = 50;
     this.width = 60;
@@ -16,7 +16,9 @@ class CritterMain {
     // objects
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d');
-    this.critters = critters;
+    this.animals = [];
+    this.food = [];
+    this.critterClasses = critterClasses;
     this.critterCount = critterCount;
 
     // this.gameObjects = [];
@@ -50,7 +52,7 @@ class CritterMain {
 
   init() {
     this.setCanvasSize();
-    this.placeCritters(this.critters, this.critterCount);
+    this.placeCritters(this.critterClasses, this.critterCount);
     this.requestFrame();
   }
 
@@ -69,36 +71,53 @@ class CritterMain {
   placeCritters(critterClasses, amount) {
     // create field
     let field = new Array(this.height * this.width).fill(null);
-    let animals = [];
-    let food = [];
 
     // create animals
     critterClasses.forEach(CritterClass => {
       for (let i = 0; i < amount; i++) {
         switch (CritterClass.prototype.constructor.name) {
           case 'Bear':
-            animals.push(new CritterClass(!!Math.round(Math.random())));
+            this.animals.push(new CritterClass(!!Math.round(Math.random())));
             break;
           case 'Tiger':
-            animals.push(new CritterClass(Math.floor(Math.random() * 10)));
+            this.animals.push(new CritterClass(Math.floor(Math.random() * 10)));
             break;
           default:
-            animals.push(new CritterClass());
+            this.animals.push(new CritterClass());
         }
       }
     });
 
     // grow food
     for (let i = this.availableFood; i > 0; i--) {
-      food.push(new Food());
+      this.food.push(new Food());
     }
 
     // add animals to the field and shuffle
-    field.splice(0, animals.length + food.length, ...animals, ...food);
-    this.gameObjects = flow(
+    field.splice(
+      0,
+      this.animals.length + this.food.length,
+      ...this.animals,
+      ...this.food
+    );
+
+    // place game objects in a grid and assign
+    let farm = flow(
       shuffle,
       chunk(this.width)
     )(field);
+
+    farm.forEach((row, y) => {
+      row.forEach((gameObject, x) => {
+        // set initial values
+        if (!gameObject) {
+          return;
+        }
+        gameObject.height = this.height;
+        gameObject.width = this.width;
+        gameObject.coords = { x, y };
+      });
+    });
   }
 
   update() {
@@ -116,55 +135,40 @@ class CritterMain {
     c.lineWidth = 1;
     c.strokeStyle = 'rgba(0,0,0,0.1)';
 
-    for (let X = this.width; X >= 0; X--) {
-      for (let Y = this.height; Y >= 0; Y--) {
-        // find critter
-        const critter = this.critters.find(({ x, y }) => x === X && y === Y);
-
+    for (let X = 0; X < this.width; X++) {
+      for (let Y = 0; Y < this.height; Y++) {
         // draw black squares
         c.strokeRect(X * this.size, Y * this.size, this.size, this.size);
+
+        // find critter
+        const critter = this.animals.find(c => c.x === X && c.y === Y);
+
+        if (critter) {
+          // ask critters where they want to move
+          const n = this.getNextMove(critter);
+
+          // ask critters if they want to fight/mate/eat
+          this.fightOrMateOrEat(critter, n);
+
+          // move critter
+          critter.coords = { x: n.x, y: n.y };
+        }
       }
     }
 
-    this.gameObjects.forEach((row, y) => {
-      row.forEach((critter, x) => {
-        // check to see if critter has already moved this turn
-        if (!critter || critter.turn !== this.turn) return;
-
-        // set initial values
-        if (this.turn === 0) {
-          critter.height = this.height;
-          critter.width = this.width;
-          critter.coords = { x, y };
-        }
-
-        // ask critters where they want to move
-        const n = this.getNextMove(critter);
-
-        // ask critters if they want to fight/mate/eat
-        this.fightOrMateOrEat(critter, n);
-
-        // paint the animals in their new coordinates if
-
-        // move critter
-        critter.coords = { x: n.x, y: n.y };
-        // this.gameObjects[y][x] = null;
-        // this.gameObjects[n.y][n.x] = critter;
-
-        // still alive
-        this.ctx.fillStyle = critter.getColor();
-        this.ctx.fillText(
-          critter.toString(),
-          critter.x * this.size + this.size / 2,
-          critter.y * this.size + this.size / 2
-        );
-      });
+    this.animals.forEach(critter => {
+      // still alive? paint.
+      this.ctx.fillStyle = critter.getColor();
+      this.ctx.fillText(
+        critter.toString(),
+        critter.x * this.size + this.size / 2,
+        critter.y * this.size + this.size / 2
+      );
     });
-    this.turn++;
   }
 
   fightOrMateOrEat(critter, n) {
-    const opponent = this.gameObjects[n.y][n.x];
+    const opponent = this.animals.find(c => c.x === n.y && c.y === n.x);
     const critterSpecies = critter.constructor.name;
     const opponentSpecies = opponent ? opponent.constructor.name : null;
     let didEat = false;
