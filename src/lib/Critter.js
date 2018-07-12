@@ -9,7 +9,6 @@ export default class Critter {
     this.x = 10;
     this.y = 10;
     this.procreated = false;
-    this.alive = true;
     this.awake = true;
     this.foodEaten = 0;
     this.killCount = 0;

@@ -13,6 +13,7 @@ class CritterMain {
     this.availableFood = 25;
     this.regenerateFood = true;
     this.foodPerTurn = [3, 25];
+    this.foodPerSleep = [5, 3];
 
     // objects
     this.canvas = canvas;
@@ -21,6 +22,7 @@ class CritterMain {
     this.food = [];
     this.critterClasses = critterClasses;
     this.critterCount = critterCount;
+    this.critterStatus = []; //[[Critter, { ...status }], ...]
 
     // bindings
     this.draw = this.draw.bind(this);
@@ -151,6 +153,10 @@ class CritterMain {
 
         critters.forEach(critter => {
           if (critter && critter.turn === this.turn) {
+            // check for fullness
+            if (critter.foodEaten) {
+            }
+
             // ask critters where they want to move
             const n = this.getNextMove(critter);
 
@@ -164,6 +170,7 @@ class CritterMain {
       }
     }
 
+    // get neighbors
     for (let i = this.animals.length - 1; i >= 0; i--) {
       this.getNeighbors(this.animals[i]);
     }

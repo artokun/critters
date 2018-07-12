@@ -1,5 +1,5 @@
 import Critter from './Critter';
-import difference from 'lodash/difference';
+// import difference from 'lodash/difference';
 
 export default class Vegan extends Critter {
   constructor() {
@@ -29,7 +29,7 @@ export default class Vegan extends Critter {
 
     if (avoid.length) {
       this.fear = true;
-      const escapeVectors = difference(Object.keys(this.Direction), avoid);
+      // const escapeVectors = difference(Object.keys(this.Direction), avoid);
       switch (avoid[0]) {
         case 'N':
         case 'NE':
