@@ -13,7 +13,7 @@ export default class Critter {
     this.awake = true;
     this.foodEaten = 0;
     this.killCount = 0;
-    this.neighbors = {
+    this._neighbors = {
       NW: ' ',
       N: ' ',
       NE: ' ',
@@ -28,6 +28,14 @@ export default class Critter {
     // constants
     this.Attack = CM.Attack;
     this.Direction = CM.Direction;
+  }
+
+  get neighbors() {
+    return this._neighbors;
+  }
+
+  set neighbors(neighbors) {
+    this._neighbors = { ...neighbors };
   }
 
   eat() {

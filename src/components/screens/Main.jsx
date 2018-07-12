@@ -4,6 +4,7 @@ import CritterMain from 'lib/CritterMain';
 import Lion from 'lib/Lion';
 import Tiger from 'lib/Tiger';
 import Bear from 'lib/Bear';
+import Vegan from 'lib/Vegan';
 
 class Main extends Component {
   state = {
@@ -11,7 +12,11 @@ class Main extends Component {
   };
 
   componentDidMount() {
-    this.game = new CritterMain(this.canvas, [Bear, Lion, Tiger], 25);
+    this.game = new CritterMain(
+      this.canvas,
+      [Bear, Lion, Tiger, [Vegan, 1]],
+      25
+    );
     this.monitor(this.game.fps);
   }
 

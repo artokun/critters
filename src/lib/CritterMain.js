@@ -73,6 +73,10 @@ class CritterMain {
 
     // create animals
     critterClasses.forEach(CritterClass => {
+      if (Array.isArray(CritterClass)) {
+        amount = CritterClass[1];
+        CritterClass = CritterClass[0];
+      }
       for (let i = 0; i < amount; i++) {
         switch (CritterClass.prototype.constructor.name) {
           case 'Bear':
@@ -137,6 +141,9 @@ class CritterMain {
     for (let X = 0; X < this.width; X++) {
       for (let Y = 0; Y < this.height; Y++) {
         // draw black squares
+        c.shadowOffsetX = 0;
+        c.shadowOffsetY = 0;
+        c.shadowBlur = 0;
         c.strokeRect(X * this.size, Y * this.size, this.size, this.size);
 
         // find critter
@@ -157,32 +164,42 @@ class CritterMain {
       }
     }
 
+    for (let i = this.animals.length - 1; i >= 0; i--) {
+      this.getNeighbors(this.animals[i]);
+    }
+
     // regenerate food over time
     if (this.regenerateFood) {
       this.growXFoodEvery(...this.foodPerTurn);
     }
 
     // paint food
-    this.food.forEach(food => {
+    for (let i = this.food.length - 1; i >= 0; i--) {
       // still alive? paint.
+      const food = this.food[i];
       this.ctx.fillStyle = food.getColor();
       this.ctx.fillText(
         food.toString(),
         food.x * this.size + this.size / 2,
         food.y * this.size + this.size / 2
       );
-    });
+    }
 
     // paint animals
-    this.animals.forEach(critter => {
+    for (let i = this.animals.length - 1; i >= 0; i--) {
       // still alive? paint.
-      this.ctx.fillStyle = critter.getColor();
+      const critter = this.animals[i];
+      this.ctx.fillStyle = critter.getColor() || 'black';
       this.ctx.fillText(
         critter.toString(),
         critter.x * this.size + this.size / 2,
         critter.y * this.size + this.size / 2
       );
-    });
+      this.ctx.shadowColor = 'black';
+      this.ctx.shadowOffsetX = -1;
+      this.ctx.shadowOffsetY = 1;
+      this.ctx.shadowBlur = 2;
+    }
 
     this.turn++;
   }
@@ -244,23 +261,21 @@ class CritterMain {
         this.animals.splice(this.animals.indexOf(critter), 1);
         console.log(opponentSpecies, 'killed', critterSpecies);
       }
-    } else {
+    } else if (critter !== opponent) {
       console.log('two', critterSpecies + 's', 'had a quicky.');
     }
   }
 
-  eat(critter) {
-    return null;
-  }
-
   resolveFight(C, O) {
-    const { ROAR, POUNCE, SCRATCH } = CritterMain.Attack;
+    const { ROAR, POUNCE, SCRATCH, FORFEIT } = CritterMain.Attack;
 
     if (C === ROAR) {
       switch (O) {
         case POUNCE:
           return false;
         case SCRATCH:
+          return true;
+        case FORFEIT:
           return true;
         default:
           return !!Math.round(Math.random());
@@ -271,6 +286,8 @@ class CritterMain {
           return true;
         case SCRATCH:
           return false;
+        case FORFEIT:
+          return true;
         default:
           return !!Math.round(Math.random());
       }
@@ -280,9 +297,13 @@ class CritterMain {
           return false;
         case POUNCE:
           return true;
+        case FORFEIT:
+          return true;
         default:
           return !!Math.round(Math.random());
       }
+    } else if (C === FORFEIT) {
+      return false;
     }
   }
 
@@ -331,46 +352,62 @@ class CritterMain {
     }
   }
 
-  getNeighbors(x, y) {
-    const go = this.gameObjects;
+  findObject({ x, y }) {
+    const animal = this.animals.find(a => {
+      const c = a.coords;
+      return c.x === x && c.y === y;
+    });
+    const food = this.food.find(f => {
+      const c = f.coords;
+      return c.x === x && c.y === y;
+    });
+    return animal ? animal.toString() : food ? food.toString() : ' ';
+  }
+
+  getNeighbors(critter) {
+    if (critter.turn !== this.turn + 1) {
+      return;
+    }
+    const { x, y } = critter.coords;
     const topEdge = y === 0;
     const rightEdge = x === this.width - 1;
     const bottomEdge = y === this.height - 1;
     const leftEdge = x === 0;
 
-    const ordinalClasses = {
+    critter.neighbors = {
       NW: topEdge
         ? leftEdge
-          ? go[this.height - 1][this.width - 1]
-          : go[this.height - 1][x - 1]
-        : go[y - 1][x - 1],
-      N: topEdge ? go[this.height - 1][x] : go[y - 1][x],
+          ? this.findObject({ y: this.width - 1, x: this.height - 1 })
+          : this.findObject({ y: this.height - 1, x: x - 1 })
+        : this.findObject({ y: y - 1, x: x - 1 }),
+      N: topEdge
+        ? this.findObject({ y: this.height - 1, x })
+        : this.findObject({ y: y - 1, x }),
       NE: topEdge
         ? rightEdge
-          ? go[this.height - 1][0]
-          : go[this.height - 1][x + 1]
-        : go[y - 1][x + 1],
-      W: leftEdge ? go[y][this.width - 1] : go[y][x - 1],
-      CENTER: go[y][x],
-      E: rightEdge ? go[y][0] : go[y][x + 1],
+          ? this.findObject({ y: this.height - 1, x: 0 })
+          : this.findObject({ y: this.height - 1, x: x + 1 })
+        : this.findObject({ y: y - 1, x: x + 1 }),
+      W: leftEdge
+        ? this.findObject({ y, x: this.width - 1 })
+        : this.findObject({ y, x: x - 1 }),
+      E: rightEdge
+        ? this.findObject({ y, x: 0 })
+        : this.findObject({ y, x: x + 1 }),
       SW: bottomEdge
         ? leftEdge
-          ? go[0][this.width - 1]
-          : go[0][x - 1]
-        : go[y + 1][x - 1],
-      S: bottomEdge ? go[0][x] : go[y + 1][x],
-      SE: bottomEdge ? (rightEdge ? go[0][0] : go[0][x + 1]) : go[y + 1][x + 1],
+          ? this.findObject({ y: 0, x: this.width - 1 })
+          : this.findObject({ y: 0, x: x - 1 })
+        : this.findObject({ y: y + 1, x: x - 1 }),
+      S: bottomEdge
+        ? this.findObject({ y: 0, x })
+        : this.findObject({ y: y + 1, x }),
+      SE: bottomEdge
+        ? rightEdge
+          ? this.findObject({ y: 0, x: 0 })
+          : this.findObject({ y: 0, x: x + 1 })
+        : this.findObject({ y: y + 1, x: x + 1 }),
     };
-
-    let neighbors = {};
-    Object.keys(ordinalClasses).forEach(key => {
-      neighbors[key] =
-        ordinalClasses && ordinalClasses[key]
-          ? ordinalClasses[key].toString()
-          : ' ';
-    });
-
-    return neighbors;
   }
 
   draw() {
