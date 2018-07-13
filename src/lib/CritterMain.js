@@ -23,6 +23,7 @@ class CritterMain {
     this.critterClasses = critterClasses;
     this.critterCount = critterCount;
     this.critterStatus = []; //[[Critter, { ...status }], ...]
+    this.defaultState = {};
 
     // bindings
     this.draw = this.draw.bind(this);
@@ -82,20 +83,26 @@ class CritterMain {
       for (let i = 0; i < amount; i++) {
         switch (CritterClass.prototype.constructor.name) {
           case 'Bear':
-            this.animals.push(new CritterClass(!!Math.round(Math.random())));
+            this.animals.push([
+              new CritterClass(!!Math.round(Math.random())),
+              this.defaultState,
+            ]);
             break;
           case 'Tiger':
-            this.animals.push(new CritterClass(Math.floor(Math.random() * 10)));
+            this.animals.push([
+              new CritterClass(Math.floor(Math.random() * 10)),
+              this.defaultState,
+            ]);
             break;
           default:
-            this.animals.push(new CritterClass());
+            this.animals.push([new CritterClass(), this.defaultState]);
         }
       }
     });
 
     // grow food
     for (let i = this.availableFood; i > 0; i--) {
-      this.food.push(new Food());
+      this.food.push([new Food(), this.defaultState]);
     }
 
     // add animals to the field and shuffle

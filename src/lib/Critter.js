@@ -71,16 +71,6 @@ export default class Critter {
     return this.neighbors[direction];
   }
 
-  get coords() {
-    return { x: this.x, y: this.y };
-  }
-
-  set coords({ x, y }) {
-    this.turn++;
-    this.x = x;
-    this.y = y;
-  }
-
   // These methods are provided to inform you about the result
   // of fights, sleeping, etc.
 
@@ -104,23 +94,4 @@ export default class Critter {
 
   // called when your critter is done mating with another critter
   mateEnd() {}
-
-  // private methods
-
-  setSettings(settings) {
-    const validKeys = [
-      'height',
-      'width',
-      'x',
-      'y',
-      'alive',
-      'awake',
-      'neighbors',
-    ];
-    Object.keys(settings).forEach(key => {
-      if (validKeys.indexOf(key) >= 0) {
-        this[key] = settings[key];
-      }
-    });
-  }
 }
