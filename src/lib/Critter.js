@@ -6,35 +6,12 @@ export default class Critter {
     this.turn = 0;
     this.height = 0;
     this.width = 0;
-    this.x = 10;
-    this.y = 10;
-    this.procreated = false;
-    this.awake = true;
-    this.foodEaten = 0;
-    this.killCount = 0;
-    this._neighbors = {
-      NW: ' ',
-      N: ' ',
-      NE: ' ',
-      W: ' ',
-      CENTER: ' ',
-      E: ' ',
-      SW: ' ',
-      S: ' ',
-      SE: ' ',
-    };
+    this.coords = { x: 0, y: 0 };
+    this.neighbors = {};
 
     // constants
     this.Attack = CM.Attack;
     this.Direction = CM.Direction;
-  }
-
-  get neighbors() {
-    return this._neighbors;
-  }
-
-  set neighbors(neighbors) {
-    this._neighbors = { ...neighbors };
   }
 
   eat() {
@@ -58,17 +35,6 @@ export default class Critter {
 
   toString() {
     return '?';
-  }
-
-  // The following methods are provided to get information
-  // about the critter.
-
-  dimensions() {
-    return { width: this.width, height: this.height };
-  }
-
-  neighbor(direction) {
-    return this.neighbors[direction];
   }
 
   // These methods are provided to inform you about the result
