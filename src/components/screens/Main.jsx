@@ -15,6 +15,7 @@ class Main extends Component {
     this.game = new CritterMain(
       this.canvas,
       [Bear, Lion, Tiger, [Vegan, 1]],
+      // [[Vegan, 1]],
       25
     );
     this.monitor(this.game.fps);
@@ -25,22 +26,7 @@ class Main extends Component {
   };
 
   updateScores = () => {
-    const scores = this.game.animals.reduce((prev, curr) => {
-      let critter = prev[curr.constructor.name] || {};
-      let newCritter = {
-        ...critter,
-        alive: critter.alive ? critter.alive + 1 : 1,
-        foodEaten: (critter.foodEaten ? critter.foodEaten : 0) + curr.foodEaten,
-        killCount: (critter.killCount ? critter.killCount : 0) + curr.killCount,
-        score:
-          (critter.score ? critter.score : 0) +
-          curr.foodEaten +
-          curr.killCount +
-          1,
-      };
-      prev[curr.constructor.name] = newCritter;
-      return prev;
-    }, {});
+    const scores = this.game.scores;
 
     this.setState({
       scores,

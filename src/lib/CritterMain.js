@@ -9,7 +9,7 @@ class CritterMain {
     this.width = 60;
     this.size = 15;
     this.turn = 0;
-    this.fps = 4;
+    this.fps = 40;
     this.availableFood = 25;
     this.regenerateFood = true;
     this.foodPerTurn = [3, 25];
@@ -23,7 +23,8 @@ class CritterMain {
     this.critterClasses = critterClasses;
     this.critterCount = critterCount;
     this.critterStatus = []; //[[Critter, { ...status }], ...]
-    this.defaultState = { turn: 0, foodEaten: 0, killCount: 0 };
+    this.defaultState = { turn: 0, foodEaten: 0, killCount: 0, alive: true };
+    this.scores = {};
 
     // bindings
     this.draw = this.draw.bind(this);
@@ -150,18 +151,18 @@ class CritterMain {
     for (let X = 0; X < this.width; X++) {
       for (let Y = 0; Y < this.height; Y++) {
         // draw black squares
-        c.shadowOffsetX = 0;
-        c.shadowOffsetY = 0;
-        c.shadowBlur = 0;
         c.strokeRect(X * this.size, Y * this.size, this.size, this.size);
 
         // find critter
-        const critters = this.animals.filter(
-          c => c[1].coords.x === X && c[1].coords.y === Y
-        );
-
-        critters.forEach(critter => {
-          if (critter && critter[1].turn === this.turn) {
+        this.animals
+          .filter(
+            c =>
+              !!c[1].alive &&
+              c[1].turn === this.turn &&
+              c[1].coords.x === X &&
+              c[1].coords.y === Y
+          )
+          .forEach(critter => {
             // check for fullness
             if (critter.foodEaten) {
             }
@@ -175,8 +176,7 @@ class CritterMain {
             // schedule next move
             critter[1].coords = { ...n };
             critter[0].coords = { ...n };
-          }
-        });
+          });
       }
     }
 
@@ -187,36 +187,45 @@ class CritterMain {
 
     // regenerate food over time
     if (this.regenerateFood) {
-      this.growXFoodEvery(...this.foodPerTurn);
+      // this.growXFoodEvery(...this.foodPerTurn);
     }
+
+    // add shadows
+    this.ctx.shadowColor = 'black';
+    this.ctx.shadowOffsetX = -1;
+    this.ctx.shadowOffsetY = 1;
+    this.ctx.shadowBlur = 2;
 
     // paint food
     for (let i = this.food.length - 1; i >= 0; i--) {
       const food = this.food[i];
-      this.ctx.fillStyle = food[0].getColor();
-      this.ctx.fillText(
-        food[0].toString(),
-        food[1].coords.x * this.size + this.size / 2,
-        food[1].coords.y * this.size + this.size / 2
-      );
+      if (food[1].alive) {
+        this.ctx.fillStyle = food[0].getColor();
+        this.ctx.fillText(
+          food[0].toString(),
+          food[1].coords.x * this.size + this.size / 2,
+          food[1].coords.y * this.size + this.size / 2
+        );
+      }
     }
 
     // paint animals
     for (let i = this.animals.length - 1; i >= 0; i--) {
       // still alive? paint.
       const critter = this.animals[i];
-      this.ctx.fillStyle = critter[0].getColor() || 'black';
-      this.ctx.fillText(
-        critter[0].toString(),
-        critter[1].coords.x * this.size + this.size / 2,
-        critter[1].coords.y * this.size + this.size / 2
-      );
-      this.ctx.shadowColor = 'black';
-      this.ctx.shadowOffsetX = -1;
-      this.ctx.shadowOffsetY = 1;
-      this.ctx.shadowBlur = 2;
+      if (critter[1].alive) {
+        this.ctx.fillStyle = critter[0].getColor() || 'black';
+        this.ctx.fillText(
+          critter[0].toString(),
+          critter[1].coords.x * this.size + this.size / 2,
+          critter[1].coords.y * this.size + this.size / 2
+        );
+      }
     }
 
+    this.ctx.shadowOffsetX = 0;
+    this.ctx.shadowOffsetY = 0;
+    this.ctx.shadowBlur = 0;
     this.turn++;
   }
 
@@ -240,53 +249,54 @@ class CritterMain {
   }
 
   fightOrMateOrEat(critter, n) {
-    const opponent = this.animals.find(
-      c => c[1].coords.x === n.x && c[1].coords.y === n.y
+    const opponents = this.animals.filter(
+      c => !!c[1].alive && c[1].coords.x === n.x && c[1].coords.y === n.y
     );
-    const food = this.food.find(
-      f => f[1].coords.x === n.x && f[1].coords.y === n.y
+    const foods = this.food.filter(
+      f => !!f[1].alive && f[1].coords.x === n.x && f[1].coords.y === n.y
     );
-    const critterSpecies = critter[0].constructor.name;
-    const opponentSpecies = opponent ? opponent[0].constructor.name : null;
 
     // critter found food
-    if (food) {
-      const willEat = critter[0].eat();
-
-      if (willEat) {
+    if (foods && foods.length) {
+      if (critter[0].eat()) {
         critter[1].foodEaten++;
-        this.food.splice(this.food.indexOf(food), 1);
+        foods.forEach(f => {
+          f[1].alive = false;
+        });
       }
-      return;
     }
 
     // no critter
-    if (!opponent) {
+    if (opponents.length === 0) {
       return;
     }
+    opponents.forEach(opponent => {
+      const critterSpecies = critter[0].constructor.name;
+      const opponentSpecies = opponent ? opponent[0].constructor.name : null;
 
-    // critters are of different species; fight to the death!
-    if (opponentSpecies !== critterSpecies) {
-      const isWinner = this.resolveFight(
-        critter[0].fight(opponent[0].toString()),
-        opponent[0].fight(critter[0].toString())
-      );
-      if (isWinner) {
-        critter[0].win(opponent[0].toString());
-        opponent[0].lose(critter[0].toString());
-        critter[1].killCount++;
-        this.animals.splice(this.animals.indexOf(opponent), 1);
-        // console.log(critterSpecies, 'killed', opponentSpecies);
-      } else {
-        critter[0].lose(opponent[0].toString());
-        opponent[0].win(critter[0].toString());
-        opponent[1].killCount++;
-        this.animals.splice(this.animals.indexOf(critter), 1);
-        // console.log(opponentSpecies, 'killed', critterSpecies);
+      // critters are of different species; fight to the death!
+      if (opponentSpecies !== critterSpecies) {
+        const isWinner = this.resolveFight(
+          critter[0].fight(opponent[0].toString()),
+          opponent[0].fight(critter[0].toString())
+        );
+        if (isWinner) {
+          critter[0].win(opponent[0].toString());
+          opponent[0].lose(critter[0].toString());
+          critter[1].killCount++;
+          opponent[1].alive = false;
+          // console.log(critterSpecies, 'killed', opponentSpecies);
+        } else {
+          critter[0].lose(opponent[0].toString());
+          opponent[0].win(critter[0].toString());
+          opponent[1].killCount++;
+          critter[1].alive = false;
+          // console.log(opponentSpecies, 'killed', critterSpecies);
+        }
+      } else if (critter !== opponent) {
+        // console.log('two', critterSpecies + 's', 'had a quicky.');
       }
-    } else if (critter !== opponent) {
-      // console.log('two', critterSpecies + 's', 'had a quicky.');
-    }
+    });
   }
 
   resolveFight(C, O) {
@@ -347,7 +357,9 @@ class CritterMain {
           ? leftEdge
             ? { y: this.width - 1, x: this.height - 1 }
             : { y: this.height - 1, x: x - 1 }
-          : { y: y - 1, x: x - 1 };
+          : leftEdge
+            ? { y: y - 1, x: this.width - 1 }
+            : { y: y - 1, x: x - 1 };
       case 'N':
         return topEdge ? { y: this.height - 1, x } : { y: y - 1, x };
       case 'NE':
@@ -355,7 +367,9 @@ class CritterMain {
           ? rightEdge
             ? { y: this.height - 1, x: 0 }
             : { y: this.height - 1, x: x + 1 }
-          : { y: y - 1, x: x + 1 };
+          : rightEdge
+            ? { y: y - 1, x: 0 }
+            : { y: y - 1, x: x + 1 };
       case 'W':
         return leftEdge ? { y, x: this.width - 1 } : { y, x: x - 1 };
       case 'E':
@@ -365,7 +379,9 @@ class CritterMain {
           ? leftEdge
             ? { y: 0, x: this.width - 1 }
             : { y: 0, x: x - 1 }
-          : { y: y + 1, x: x - 1 };
+          : leftEdge
+            ? { y: y + 1, x: this.width - 1 }
+            : { y: y + 1, x: x - 1 };
       case 'S':
         return bottomEdge ? { y: 0, x } : { y: y + 1, x };
       case 'SE':
@@ -373,7 +389,9 @@ class CritterMain {
           ? rightEdge
             ? { y: 0, x: 0 }
             : { y: 0, x: x + 1 }
-          : { y: y + 1, x: x + 1 };
+          : rightEdge
+            ? { y: y - 1, x: 0 }
+            : { y: y + 1, x: x + 1 };
       default:
         return { y, x };
     }
@@ -406,7 +424,9 @@ class CritterMain {
         ? leftEdge
           ? this.findObject({ y: this.width - 1, x: this.height - 1 })
           : this.findObject({ y: this.height - 1, x: x - 1 })
-        : this.findObject({ y: y - 1, x: x - 1 }),
+        : leftEdge
+          ? this.findObject({ y: y - 1, x: this.width - 1 })
+          : this.findObject({ y: y - 1, x: x - 1 }),
       N: topEdge
         ? this.findObject({ y: this.height - 1, x })
         : this.findObject({ y: y - 1, x }),
@@ -414,7 +434,9 @@ class CritterMain {
         ? rightEdge
           ? this.findObject({ y: this.height - 1, x: 0 })
           : this.findObject({ y: this.height - 1, x: x + 1 })
-        : this.findObject({ y: y - 1, x: x + 1 }),
+        : rightEdge
+          ? this.findObject({ y: y - 1, x: 0 })
+          : this.findObject({ y: y - 1, x: x + 1 }),
       W: leftEdge
         ? this.findObject({ y, x: this.width - 1 })
         : this.findObject({ y, x: x - 1 }),
@@ -425,7 +447,9 @@ class CritterMain {
         ? leftEdge
           ? this.findObject({ y: 0, x: this.width - 1 })
           : this.findObject({ y: 0, x: x - 1 })
-        : this.findObject({ y: y + 1, x: x - 1 }),
+        : leftEdge
+          ? this.findObject({ y: y + 1, x: this.width - 1 })
+          : this.findObject({ y: y + 1, x: x - 1 }),
       S: bottomEdge
         ? this.findObject({ y: 0, x })
         : this.findObject({ y: y + 1, x }),
@@ -433,8 +457,31 @@ class CritterMain {
         ? rightEdge
           ? this.findObject({ y: 0, x: 0 })
           : this.findObject({ y: 0, x: x + 1 })
-        : this.findObject({ y: y + 1, x: x + 1 }),
+        : rightEdge
+          ? this.findObject({ y: y + 1, x: 0 })
+          : this.findObject({ y: y + 1, x: x + 1 }),
     };
+  }
+
+  calculateScore() {
+    this.scores = this.animals.reduce((prev, curr) => {
+      let critter = prev[curr[0].constructor.name] || {};
+      let newCritter = {
+        ...critter,
+        alive: (critter.alive ? critter.alive : 0) + curr[1].alive,
+        foodEaten:
+          (critter.foodEaten ? critter.foodEaten : 0) + curr[1].foodEaten,
+        killCount:
+          (critter.killCount ? critter.killCount : 0) + curr[1].killCount,
+        score:
+          (critter.score ? critter.score : 0) +
+          curr[1].foodEaten +
+          curr[1].killCount +
+          curr[1].alive,
+      };
+      prev[curr[0].constructor.name] = newCritter;
+      return prev;
+    }, {});
   }
 
   draw() {
@@ -448,6 +495,9 @@ class CritterMain {
 
     // canvas visuals
     this.update();
+
+    // update scores
+    this.calculateScore();
 
     // request next animation frame
     window.setTimeout(this.requestFrame, 1000 / this.fps);
