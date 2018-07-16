@@ -15,6 +15,7 @@ class Main extends Component {
     this.game = new CritterMain(
       this.canvas,
       [Bear, Lion, Tiger, [Vegan, 1]],
+      // [[Bear, 1]],
       // [[Vegan, 1]],
       25
     );

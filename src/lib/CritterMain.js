@@ -10,10 +10,10 @@ class CritterMain {
     this.size = 15;
     this.turn = 0;
     this.fps = 40;
-    this.availableFood = 25;
+    this.availableFood = 100;
     this.regenerateFood = true;
     this.foodPerTurn = [3, 25];
-    this.foodPerSleep = [5, 3];
+    this.foodPerSleep = [5, 5];
 
     // objects
     this.canvas = canvas;
@@ -23,7 +23,14 @@ class CritterMain {
     this.critterClasses = critterClasses;
     this.critterCount = critterCount;
     this.critterStatus = []; //[[Critter, { ...status }], ...]
-    this.defaultState = { turn: 0, foodEaten: 0, killCount: 0, alive: true };
+    this.defaultState = {
+      turn: 0,
+      foodEaten: 0,
+      killCount: 0,
+      alive: true,
+      sleep: null,
+      mating: null,
+    };
     this.scores = {};
 
     // bindings
@@ -106,7 +113,7 @@ class CritterMain {
       this.food.push([new Food(), { ...this.defaultState }]);
     }
 
-    // add animals to the field and shuffle
+    // add animals and food to the field and shuffle
     field.splice(
       0,
       this.animals.length + this.food.length,
@@ -114,7 +121,7 @@ class CritterMain {
       ...this.food
     );
 
-    // place game objects in a grid and assign
+    // place game objects in a grid and assign coodinates
     let farm = flow(
       shuffle,
       chunk(this.width)
@@ -135,6 +142,7 @@ class CritterMain {
 
   update() {
     const c = this.ctx;
+
     // font styles
     c.font = `${this.size * 0.8}px arial`;
     c.textAlign = 'center';
@@ -148,24 +156,24 @@ class CritterMain {
     c.lineWidth = 1;
     c.strokeStyle = 'rgba(0,0,0,0.1)';
 
+    // iterate though each element in the grid
     for (let X = 0; X < this.width; X++) {
       for (let Y = 0; Y < this.height; Y++) {
         // draw black squares
         c.strokeRect(X * this.size, Y * this.size, this.size, this.size);
 
-        // find critter
+        // find live critter
         this.animals
           .filter(
             c =>
               !!c[1].alive &&
               c[1].turn === this.turn &&
+              !this.isHybernating(c) &&
               c[1].coords.x === X &&
               c[1].coords.y === Y
           )
           .forEach(critter => {
-            // check for fullness
-            if (critter.foodEaten) {
-            }
+            // check if critter has a food coma
 
             // ask critters where they want to move
             const n = this.getNextMove(critter);
@@ -187,7 +195,7 @@ class CritterMain {
 
     // regenerate food over time
     if (this.regenerateFood) {
-      // this.growXFoodEvery(...this.foodPerTurn);
+      this.growXFoodEvery(...this.foodPerTurn);
     }
 
     // add shadows
@@ -214,12 +222,22 @@ class CritterMain {
       // still alive? paint.
       const critter = this.animals[i];
       if (critter[1].alive) {
+        this.ctx.font = `${this.size * 0.8}px arial`;
         this.ctx.fillStyle = critter[0].getColor() || 'black';
         this.ctx.fillText(
           critter[0].toString(),
           critter[1].coords.x * this.size + this.size / 2,
           critter[1].coords.y * this.size + this.size / 2
         );
+        if (!!critter[1].sleep) {
+          this.ctx.fillStyle = 'black';
+          this.ctx.font = `${this.size * 0.5}px arial`;
+          this.ctx.fillText(
+            'zzz',
+            critter[1].coords.x * this.size + this.size / 2 + 6,
+            critter[1].coords.y * this.size + this.size / 2 - 6
+          );
+        }
       }
     }
 
@@ -227,6 +245,29 @@ class CritterMain {
     this.ctx.shadowOffsetY = 0;
     this.ctx.shadowBlur = 0;
     this.turn++;
+  }
+
+  isHybernating(critter) {
+    // check for food coma
+    if (critter[1].sleep) {
+      if (critter[1].sleep > this.turn) {
+        critter[1].turn++;
+        return true;
+      }
+      critter[0].wakeup();
+      critter[1].sleep = 0;
+      critter[1].foodEaten++;
+    } else if (
+      critter[1].foodEaten > 0 &&
+      critter[1].foodEaten % this.foodPerSleep[0] === 0
+    ) {
+      critter[0].sleep();
+      critter[1].sleep = this.turn + this.foodPerSleep[1];
+      critter[1].foodEaten++;
+      critter[1].turn++;
+      return true;
+    }
+    return false;
   }
 
   growXFoodEvery(num, turns) {
@@ -276,10 +317,16 @@ class CritterMain {
 
       // critters are of different species; fight to the death!
       if (opponentSpecies !== critterSpecies) {
-        const isWinner = this.resolveFight(
-          critter[0].fight(opponent[0].toString()),
-          opponent[0].fight(critter[0].toString())
-        );
+        let isWinner;
+        // if opponent is eating or mating, they forfeit fight
+        if (opponent[1].sleep || opponent[1].mate) {
+          isWinner = true;
+        } else {
+          isWinner = this.resolveFight(
+            critter[0].fight(opponent[0].toString()),
+            opponent[0].fight(critter[0].toString())
+          );
+        }
         if (isWinner) {
           critter[0].win(opponent[0].toString());
           opponent[0].lose(critter[0].toString());
@@ -406,7 +453,11 @@ class CritterMain {
       const c = f[1].coords;
       return c.x === x && c.y === y;
     });
-    return animal ? animal[0].toString() : food ? food[0].toString() : ' ';
+    return animal && animal.alive && !animal[1].sleep && !animal[1].mate
+      ? animal[0].toString()
+      : food && food.alive
+        ? food[0].toString()
+        : ' ';
   }
 
   getNeighbors(critter) {
