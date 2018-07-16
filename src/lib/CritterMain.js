@@ -533,6 +533,18 @@ class CritterMain {
       prev[curr[0].constructor.name] = newCritter;
       return prev;
     }, {});
+    // if (this.turn % 100 === 0) {
+    //   const winner = Object.keys(this.scores)
+    //     .map(c => [c, this.scores[c].score])
+    //     .sort((a, b) => a[1] < b[1]);
+    //   console.log(
+    //     'Round',
+    //     this.turn / 100 + '',
+    //     'Winner: ',
+    //     winner[0][0],
+    //     winner[0][1]
+    //   );
+    // }
   }
 
   draw() {
